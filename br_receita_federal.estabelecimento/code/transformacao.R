@@ -53,7 +53,7 @@ ler_estabelecimento <- function(base,base_mun,base_p,n){
 
   base <- readr::read_delim(paste0(path_estabelecimento,"/input/bases_receita_estabelecimento/", base),
                                              delim = ";", escape_double = FALSE, col_names = FALSE,
-                                             trim_ws = TRUE)
+                                             trim_ws = TRUE, locale = locale(encoding = "WINDOWS-1252"))
   
   base$X10 <- ifelse(nchar(base$X10) > 2 | is.na(base$X10), base$X10, paste0("0",base$X10)) %>% as.character() # ajustando código dos países
   
@@ -94,6 +94,7 @@ ler_estabelecimento <- function(base,base_mun,base_p,n){
                       base$cnpj_ordem,
                       base$cnpj_dv)
   
+
   base <- base %>% dplyr::select("cnpj",
                                  "matriz_filial",
                                  "nome_fantasia",
@@ -125,12 +126,55 @@ ler_estabelecimento <- function(base,base_mun,base_p,n){
   
   
   
-  base <- left_join(base, base_mun, by= c("municipio"))
-  base <- left_join(base, base_p, by = c("pais"))
+  base <- left_join(base, base_municipio, by= c("municipio"))
+  base <- left_join(base, base_paises, by = c("pais"))
   
   base$dt_situacao_especial <- NULL
   base$situacao_especial <- NULL
   base$municipio <- NULL
+  
+  base$ano <- substr(base$dt_situacao_cadastral, 1, 4)
+  base$mes <- substr(base$dt_situacao_cadastral, 6, 7)
+  base$numero <- ifelse(base$numero == "S/N", NA, base$numero)
+  base$numero <- ifelse(base$numero == "SN", NA, base$numero)
+  
+  base$pais<- base$ds_pais
+  base$sigla_uf <- base$uf    
+  base$identificador_matriz_filial <- base$matriz_filial    
+  base$data_situacao_cadastral <- base$dt_situacao_cadastral   
+  base$data_inicio_atividade <-  base$dt_inicio_atividade 
+  
+  base$ds_pais <- NULL 
+  base$uf <- NULL  
+  base$matriz_filial <- NULL
+  base$dt_situacao_cadastral <- NULL 
+  base$dt_inicio_atividade <- NULL  
+  
+  
+  
+  base <- base %>% dplyr::select("ano",
+                                 "mes",
+                                 "id_pais",
+                                 "pais",
+                                 "nome_cidade_exterior",
+                                 "sigla_uf",
+                                 "id_municipio",
+                                 "cnpj",
+                                 "cnae_fiscal_principal",
+                                 "cnae_fiscal_secundaria",
+                                 "identificador_matriz_filial",
+                                 "nome_fantasia",
+                                 "situacao_cadastral",
+                                 "data_situacao_cadastral",
+                                 "motivo_situacao_cadastral",
+                                 "data_inicio_atividade",
+                                 "tipo_logradouro",
+                                 "logradouro",
+                                 "numero",
+                                 "complemento",
+                                 "bairro",
+                                 "cep")
+  
 
  write.csv(base, paste0(path_estabelecimento,"/output/","base_estabelecimento", n,".csv"), row.names = F)
 }
